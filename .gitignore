@@ -1,0 +1,30 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of go build
+/build/
+*.out
+
+# Local dev
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Dependency files
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+volumes/
