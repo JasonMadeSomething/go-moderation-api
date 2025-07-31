@@ -76,8 +76,11 @@ func (h *Handler) ModerateContent(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	// Check cache for existing moderation result
-	result, err := h.mongodb.FindModerationResult(ctx, request.Content)
+	// Normalize content for consistent cache lookups and moderation results
+	normalizedContent := utils.NormalizeContent(request.Content)
+
+	// Check cache for existing moderation result using normalized content
+	result, err := h.mongodb.FindModerationResult(ctx, normalizedContent)
 	if err != nil {
 		log.Printf("Error checking cache: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -101,8 +104,8 @@ func (h *Handler) ModerateContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Call OpenAI moderation API
-	moderationResponse, err := h.openaiAPI.CheckModeration(request.Content)
+	// Call OpenAI moderation API with normalized content
+	moderationResponse, err := h.openaiAPI.CheckModeration(normalizedContent)
 	if err != nil {
 		log.Printf("Error calling OpenAI API: %v", err)
 		http.Error(w, "Error checking content moderation", http.StatusInternalServerError)
@@ -112,9 +115,9 @@ func (h *Handler) ModerateContent(w http.ResponseWriter, r *http.Request) {
 	// Determine if content is allowed
 	allowed := !moderationResponse.Results[0].Flagged
 
-	// Save result to cache
+	// Save result to cache using normalized content
 	cacheResult := &models.ModerationResult{
-		Content:      request.Content,
+		Content:      normalizedContent, // Store normalized content for consistent cache lookups
 		SourceSystem: request.SourceSystem,
 		Allowed:      allowed,
 		OpenAIResult: *moderationResponse,
